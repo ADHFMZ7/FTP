@@ -2,6 +2,9 @@
 #include <sstream>
 #include <string>
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 // Handles an ftp command
 // Supported:
 // - ls
@@ -38,15 +41,14 @@ int handle_command(std::string command) {
 int main() {
 
 
-    bool active = true;
     std::string input;
 
-    // Here just a repl
 
-    while (active) {
-        std::cout << "ftp> ";
-        std::getline(std::cin, input);
+    while (1) {
 
+        // repl uses readline to provide extra functionality like file completion and command history
+        input = readline("ftp> ");
+        add_history(input.c_str());
         handle_command(input);
 
     }
