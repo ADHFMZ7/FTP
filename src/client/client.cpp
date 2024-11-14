@@ -1,7 +1,10 @@
 #include "client.h"
+#include <cstdlib>
 #include <iostream>
 #include <unistd.h>
 #include <sys/socket.h>
+
+#define BUFLEN 2048
 
 Client::Client(const std::string &host, int port): host(host), port(port) {
 
@@ -33,23 +36,33 @@ bool Client::establish_connection() {
 
     if (connect(sock, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
         std::cerr << "Connection failed" << std::endl;
-        return false;
+        exit(1);
     }
     std::cout << "Connected to server" << std::endl;
     return true;
 }
 
 int Client::put_file(std::string filename) {
-    
+     
     return 0;
 }
 
 int Client::get_file(std::string filename) {
-    
+
     return 0;
 }
 
 int Client::get_file_list() {
+
+    char *buf = (char *) malloc(sizeof(char) * BUFLEN);
+
+    int bytes_read = recv(this->sock, buf, BUFLEN, 0);
+    if (bytes_read == -1) {
+        std::cerr << "Failed to receive message" << std::endl;
+        return false;
+    }
+    std::cout << "Message: " << buf << std::endl; 
+
 
     return 0;
 }

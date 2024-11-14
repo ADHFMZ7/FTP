@@ -27,7 +27,6 @@ int handle_command(Client &c, std::string command) {
         exit(0);
     }
     else if (op == "ls") {
-        std::cout << "ls..." << std::endl;
         std::cout << c.get_file_list() << std::endl;
     }
 
@@ -46,7 +45,7 @@ int handle_command(Client &c, std::string command) {
 }
 int main() {
 
-    Client c{"127.0.0.1", 8080};
+    Client c("127.0.0.1", 8080);
 
     std::string input;
 
