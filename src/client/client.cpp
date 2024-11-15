@@ -43,16 +43,24 @@ bool Client::establish_connection() {
 }
 
 int Client::put_file(std::string filename) {
-     
+    
+    std::string request = "put " + filename;
+    send(sock, request.c_str(), request.length(), 0);
+
     return 0;
 }
 
 int Client::get_file(std::string filename) {
 
+    std::string request = "get " + filename;
+    send(sock, request.c_str(), request.length(), 0);
+
     return 0;
 }
 
 int Client::get_file_list() {
+
+    send(sock, "ls", 3, 0);
 
     char *buf = (char *) malloc(sizeof(char) * BUFLEN);
 
@@ -61,8 +69,8 @@ int Client::get_file_list() {
         std::cerr << "Failed to receive message" << std::endl;
         return false;
     }
-    std::cout << "Message: " << buf << std::endl; 
+    std::cout << buf; 
 
-
+    free(buf);
     return 0;
 }

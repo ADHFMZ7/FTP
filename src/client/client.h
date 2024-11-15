@@ -17,8 +17,6 @@ private:
 
     int sock;
     struct sockaddr_in server_address;
-    int connect_to_server;
-    std::string send_request(const std::string& message);
     
     const std::string host;
     const int port;

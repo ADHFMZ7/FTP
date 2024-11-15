@@ -27,7 +27,7 @@ int handle_command(Client &c, std::string command) {
         exit(0);
     }
     else if (op == "ls") {
-        std::cout << c.get_file_list() << std::endl;
+        c.get_file_list();
     }
 
     // make sure p1 is a real filename?
