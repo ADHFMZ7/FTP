@@ -12,10 +12,11 @@
 #include <signal.h>
 #include <string>
 #include <filesystem>
+#include <netinet/tcp.h>
+#include <fstream>
 #include <iostream>
 
 #define PORT "8080"  // the port users will be connecting to
-
 #define BACKLOG 10	 // how many pending connections queue will hold
 
 void sigchld_handler(int s)
@@ -87,6 +88,7 @@ int main(void)
 
 	freeaddrinfo(servinfo); // all done with this structure
 
+
 	if (p == NULL)  {
 		fprintf(stderr, "server: failed to bind\n");
 		exit(1);
@@ -119,21 +121,31 @@ int main(void)
 			get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s);
 		printf("server: got connection from %s\n", s);
+		int mss;
+		socklen_t optlen = sizeof(mss);
+
+		if (getsockopt(new_fd, IPPROTO_TCP, TCP_MAXSEG, &mss, &optlen) == -1) {
+			perror("getsockopt failed");
+			close(sockfd);
+			exit(EXIT_FAILURE);
+		}
+
 
 		if (!fork()) { // this is the child process
 			close(sockfd); // child doesn't need the listener
 
-			char buf[1024];
+			char buf[mss];
 			std::string command;
+
+			int bytes_received = 0;
 
 			// Loop to handle multiple client commands
 			while (true) {
-				int bytes_received = recv(new_fd, buf, sizeof(buf) - 1, 0);
+				bytes_received = recv(new_fd, buf, mss - 1, 0);
 				if (bytes_received <= 0) break; // connection closed by client or error
 
 				buf[bytes_received] = '\0'; // null-terminate for safety
 				command = buf;
-
 				if (command == "ls") {
 					std::string file_list;
 					std::string path = "./";
@@ -145,7 +157,49 @@ int main(void)
 					if (send(new_fd, file_list.c_str(), file_list.length(), 0) == -1)
 						perror("send");
 				}
-				else std::cout << command << std::endl;
+				else if (command.substr(0, command.find(" ")) == "get") {
+				
+					// ensure file exists
+
+					// calculate number of segments
+					
+					// send number of segments
+
+					// loop n times sending segments
+
+				}
+				else if (command.substr(0, command.find(" ")) == "put") {
+					
+					bytes_received = recv(new_fd, buf, mss - 1, 0);
+					if (bytes_received <= 0) break;
+
+					std::ofstream ofs (command.substr(command.find(" ") + 1), std::ofstream::out);
+
+
+					// ERROR CHECKING HERE
+
+					ofs << "LOREM IPSUM";
+					if(ofs.bad())    //bad() function will check for badbit
+					{
+						std::cout << "Writing to file failed" << std::endl;
+					}
+					ofs.close();
+					std::cout << "written to file" << std::endl;
+					// get number of segments
+
+
+					// buf should contain a 32 bit int	
+					
+
+
+					// loop n times and recv segments
+
+				}
+
+				else {
+					// unrecognized command error
+					std::cout << "Command not found: " << command.substr(0, command.find(" ")) << std::endl;
+				}
 			}
 
 			close(new_fd); // close connection when done

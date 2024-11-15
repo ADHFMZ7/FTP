@@ -3,6 +3,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 
 #define BUFLEN 2048
 
@@ -39,6 +40,18 @@ bool Client::establish_connection() {
         exit(1);
     }
     std::cout << "Connected to server" << std::endl;
+
+    int mss;
+    socklen_t optlen = sizeof(mss);
+
+    if (getsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, &mss, &optlen) == -1) {
+        perror("getsockopt failed");
+        close(sock);
+        exit(1);
+    }
+
+    printf("MSS for this connection: %d bytes\n", mss);
+
     return true;
 }
 
