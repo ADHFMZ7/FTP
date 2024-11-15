@@ -17,6 +17,7 @@ private:
 
     int sock;
     struct sockaddr_in server_address;
+    int mss;
     
     const std::string host;
     const int port;

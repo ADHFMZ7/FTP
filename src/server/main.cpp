@@ -135,17 +135,16 @@ int main(void)
 			close(sockfd); // child doesn't need the listener
 
 			char buf[mss];
-			std::string command;
 
 			int bytes_received = 0;
 
 			// Loop to handle multiple client commands
-			while (true) {
+			while (1) {
 				bytes_received = recv(new_fd, buf, mss - 1, 0);
 				if (bytes_received <= 0) break; // connection closed by client or error
 
 				buf[bytes_received] = '\0'; // null-terminate for safety
-				command = buf;
+				std::string command (buf);
 				if (command == "ls") {
 					std::string file_list;
 					std::string path = "./";
@@ -168,33 +167,68 @@ int main(void)
 					// loop n times sending segments
 
 				}
+
 				else if (command.substr(0, command.find(" ")) == "put") {
-					
-					bytes_received = recv(new_fd, buf, mss - 1, 0);
-					if (bytes_received <= 0) break;
+					std::string filename = command.substr(command.find(" ") + 1);
+					filename.erase(filename.find_last_not_of(" \n\r\t") + 1);     // Trim trailing whitespace
+					std::ofstream ofs(filename, std::ofstream::out | std::ofstream::binary);
 
-					std::ofstream ofs (command.substr(command.find(" ") + 1), std::ofstream::out);
-
-
-					// ERROR CHECKING HERE
-
-					ofs << "LOREM IPSUM";
-					if(ofs.bad())    //bad() function will check for badbit
-					{
-						std::cout << "Writing to file failed" << std::endl;
+					if (!ofs.is_open()) {
+						std::cerr << "Failed to open file: " << filename << std::endl;
+						continue; 
 					}
+
+					std::cout << "Receiving file: " << filename << std::endl;
+
+					while (1) {
+						std::cout << "IN THIS LOOP" << std::endl;
+						bytes_received = recv(new_fd, buf, 4, 0);
+						if (bytes_received <= 0) break; 
+
+						if (bytes_received != 4) {
+							std::cerr << "Incomplete header received." << std::endl;
+							break;
+						}
+
+					// Parse the header
+						uint16_t length = (static_cast<unsigned char>(buf[0]) << 8) |
+							           static_cast<unsigned char>(buf[1]);
+						uint16_t seq_num = (static_cast<unsigned char>(buf[2]) << 8) |
+								    static_cast<unsigned char>(buf[3]);
+
+						std::cout << "Segment received - Length: " << length
+							  << ", Sequence Number: " << seq_num << std::endl;
+
+						// Read the data payload
+						if (length > mss - 4) {
+							std::cerr << "Invalid length: " << length << " exceeds MSS payload." << std::endl;
+							break;
+						}
+
+						bytes_received = recv(new_fd, buf, length, 0);
+						if (bytes_received <= 0) break; // Connection closed or error
+
+						if (bytes_received != length) {
+							std::cerr << "Incomplete data received. Expected: " << length
+								  << ", Received: " << bytes_received << std::endl;
+							break;
+						}
+
+					ofs.write(buf, bytes_received);
+					if (ofs.bad()) {
+					    std::cerr << "Error writing to file: " << filename << std::endl;
+					    break;
+						}
+					}
+
 					ofs.close();
-					std::cout << "written to file" << std::endl;
-					// get number of segments
-
-
-					// buf should contain a 32 bit int	
-					
-
-
-					// loop n times and recv segments
-
+					std::cout << "File transfer complete: " << filename << std::endl;
+				    char tmp_buf[1024];
+				    while (recv(sockfd, tmp_buf, sizeof(tmp_buf), MSG_DONTWAIT) > 0) {
+					// Discard any leftover data
+				    }
 				}
+
 
 				else {
 					// unrecognized command error

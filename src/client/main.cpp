@@ -38,7 +38,6 @@ int handle_command(Client &c, std::string command) {
 
     }
     else if (op == "put") {
-        std::cout << "putting filename: " << p1 << std::endl;
         c.put_file(p1);
     }
     return 0;

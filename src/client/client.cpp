@@ -41,7 +41,6 @@ bool Client::establish_connection() {
     }
     std::cout << "Connected to server" << std::endl;
 
-    int mss;
     socklen_t optlen = sizeof(mss);
 
     if (getsockopt(sock, IPPROTO_TCP, TCP_MAXSEG, &mss, &optlen) == -1) {
@@ -50,18 +49,61 @@ bool Client::establish_connection() {
         exit(1);
     }
 
-    printf("MSS for this connection: %d bytes\n", mss);
 
     return true;
 }
 
 int Client::put_file(std::string filename) {
-    
+
+    // request
     std::string request = "put " + filename;
-    send(sock, request.c_str(), request.length(), 0);
+    if (send(sock, request.c_str(), request.length(), 0) == -1) {
+        perror("Failed to send put request");
+        return -1;
+    }
+
+    FILE *file = fopen(filename.c_str(), "rb");
+    if (!file) {
+        perror("Failed to open file");
+        return -1;
+    }
+
+    int chunk_size = mss - 4;
+    std::cout << "Using chunk size: " << chunk_size << " bytes" << std::endl;
+
+    char *buffer = new char[mss];
+
+    uint16_t seq_num = 0; 
+    size_t bytes_read;
+
+    while ((bytes_read = fread(buffer + 4, 1, chunk_size, file)) > 0) {
+        buffer[0] = (bytes_read >> 8) & 0xFF;
+        buffer[1] = bytes_read & 0xFF;
+        buffer[2] = (seq_num >> 8) & 0xFF;
+        buffer[3] = seq_num & 0xFF;
+
+        if (send(sock, buffer, bytes_read + 4, 0) == -1) {
+            perror("Failed to send segment");
+            delete[] buffer;
+            fclose(file);
+            return -1;
+        }
+
+        seq_num++; 
+    }
+
+    if (ferror(file)) {
+        perror("File read error");
+    } else {
+        std::cout << "File transfer complete: " << filename << std::endl;
+    }
+
+    delete[] buffer;
+    fclose(file);
 
     return 0;
 }
+
 
 int Client::get_file(std::string filename) {
 
