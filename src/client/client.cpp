@@ -55,7 +55,6 @@ bool Client::establish_connection() {
 
 int Client::put_file(std::string filename) {
 
-    // request
     std::string request = "put " + filename;
     if (send(sock, request.c_str(), request.length(), 0) == -1) {
         perror("Failed to send put request");

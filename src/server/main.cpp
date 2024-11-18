@@ -181,7 +181,6 @@ int main(void)
 					std::cout << "Receiving file: " << filename << std::endl;
 
 					while (1) {
-						std::cout << "IN THIS LOOP" << std::endl;
 						bytes_received = recv(new_fd, buf, 4, 0);
 						if (bytes_received <= 0) break; 
 
@@ -223,10 +222,6 @@ int main(void)
 
 					ofs.close();
 					std::cout << "File transfer complete: " << filename << std::endl;
-				    char tmp_buf[1024];
-				    while (recv(sockfd, tmp_buf, sizeof(tmp_buf), MSG_DONTWAIT) > 0) {
-					// Discard any leftover data
-				    }
 				}
 
 
