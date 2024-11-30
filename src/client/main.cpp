@@ -40,6 +40,9 @@ int handle_command(Client &c, std::string command) {
     else if (op == "put") {
         c.put_file(p1);
     }
+    else {
+        std::cout << "Command not found: " << op << std::endl;
+    }
     return 0;
 }
 int main() {
