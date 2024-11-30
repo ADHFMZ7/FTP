@@ -16,7 +16,6 @@
 #include <fstream>
 #include <iostream>
 
-#define PORT "8080"  // the port users will be connecting to
 #define BACKLOG 10	 // how many pending connections queue will hold
 
 int send_error_header(int sockfd) {
@@ -50,7 +49,7 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
 	struct addrinfo hints, *servinfo, *p;
@@ -61,12 +60,22 @@ int main(void)
 	char s[INET6_ADDRSTRLEN];
 	int rv;
 
+	if (argc != 2) {
+		fprintf(stderr,"usage: %s <port>\n", argv[0]);
+		exit(1);
+	}
+
+	// Set the port number
+	char *port = argv[1];
+
+	// Set the port number	
+
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE; // use my IP
 
-	if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+	if ((rv = getaddrinfo(NULL, port, &hints, &servinfo)) != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
@@ -114,6 +123,8 @@ int main(void)
 		perror("sigaction");
 		exit(1);
 	}
+
+	std::cout << "Server started on port " << port << std::endl;
 
 	printf("server: waiting for connections...\n");
 

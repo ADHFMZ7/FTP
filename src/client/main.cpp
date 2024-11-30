@@ -2,6 +2,7 @@
 #include <sstream>
 #include <string>
 #include "client.h"
+#include <netdb.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -46,9 +47,31 @@ int handle_command(Client &c, std::string command) {
     }
     return 0;
 }
-int main() {
+int main(int argc, char *argv[]) {
 
-    Client c("127.0.0.1", 8080);
+    if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " <host> <port>" << std::endl;
+        return 1;
+    }
+
+    std::string host = argv[1];
+    int port = std::stoi(argv[2]);
+
+    struct addrinfo *sa;
+
+    if (getaddrinfo(host.c_str(), NULL, NULL, &sa) != 0) {
+        std::cerr << "Invalid host: " << host << std::endl;
+        return 1;
+    }
+
+    struct sockaddr* addrsPtr = sa->ai_addr;
+
+    std::cout << "IP: " << inet_ntoa((((struct sockaddr_in *)addrsPtr)->sin_addr)) << std::endl;
+
+    std::string  ip = inet_ntoa((((struct sockaddr_in *)addrsPtr)->sin_addr));
+    freeaddrinfo(sa); 
+
+    Client c(ip, port);
 
     std::string input;
 
