@@ -14,7 +14,6 @@ Client::Client(const std::string &host, int port): host(host), port(port) {
         std::cerr << "Failed to establish connection" << std::endl;
         exit(1);
     }
-
 }
 
 Client::~Client() {
@@ -167,6 +166,8 @@ int Client::get_file(std::string filename) {
 
         if (length == 0 && seq_num == 0) {
             std::cout << "File cannot be sent" << std::endl;
+            ofs.close();
+            remove(filename.c_str());
             break;
         }
 
@@ -179,6 +180,8 @@ int Client::get_file(std::string filename) {
         bytes_received = recv(sock, buf, length, 0);
         if (bytes_received <= 0) {
             perror("recv error or connection closed unexpectedly");
+            ofs.close();
+            remove(filename.c_str());
             break;
         }
 
@@ -192,6 +195,8 @@ int Client::get_file(std::string filename) {
         ofs.write(buf, bytes_received);
         if (ofs.bad()) {
             std::cerr << "Error writing to file: " << filename << std::endl;
+            ofs.close();
+            remove(filename.c_str());
             break;
         }
     }
