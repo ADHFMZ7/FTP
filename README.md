@@ -18,7 +18,8 @@ Program requires GNU Readline.
 
 ## Example
 
-### Server Terminal
+### Server
+```
 ~/Documents/school/FTP/src/bin/server - (main) > ./server 8081
 Server started on 127.0.0.1:8081
 server: waiting for connections...
@@ -36,8 +37,10 @@ Sending file: test2.txt
 Read 30 bytes; seq number: 0
 Sent EOF marker
 File transfer complete: test2.txt
+```
 
-### Client Terminal
+### Client
+```
 (web) ~/Documents/school/FTP/src/bin/client - (main) > ./client 127.0.0.1 8081
 IP: 127.0.0.1
 Connected to server
@@ -55,6 +58,7 @@ getting filename: test2.txt
 Segment received - Length: 30, Sequence Number: 0
 Segment received - Length: 0, Sequence Number: 1
 File transfer complete: test2.txt
+```
 
 ## Protocol Design
 
