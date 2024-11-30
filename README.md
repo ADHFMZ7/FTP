@@ -7,6 +7,7 @@
 - Kourosh Alasti - kalasti@csu.fullerton.edu
 - Francisco Godoy - fgodoy0@csu.fullerton.edu
 - Christian Bonilla - chrisbo@csu.fullerton.edu
+- Theo Gonong - tgonong@csu.fullerton.edu
 
 ## User Guide
 Program requires GNU Readline.
