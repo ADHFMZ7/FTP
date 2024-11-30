@@ -103,8 +103,10 @@ int main(int argc, char *argv[])
 		break;
 	}
 
-	freeaddrinfo(servinfo); // all done with this structure
+	// print port
+	std::cout << "Server started on 127.0.0.1:"<< port << std::endl;
 
+	freeaddrinfo(servinfo); // all done with this structure
 
 	if (p == NULL)  {
 		fprintf(stderr, "server: failed to bind\n");
@@ -124,7 +126,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	std::cout << "Server started on port " << port << std::endl;
+
 
 	printf("server: waiting for connections...\n");
 

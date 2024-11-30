@@ -172,7 +172,7 @@ int Client::get_file(std::string filename) {
         }
 
         if (length == 0) {
-            std::cout << "EOF marker received" << std::endl;
+            std::cout << "File transfer complete: " << filename << std::endl;
             break;
         }
 

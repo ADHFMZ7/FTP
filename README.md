@@ -12,6 +12,7 @@
 
 ### Data packet
 This packet is used when file data is being transmitted. The first two byte field holds the length of the payload in the current segment in byte and the second two byte field holds the sequence number of the current file transmission.
+
 ```
 0                32                64  
 +--------+--------+--------+--------+  
@@ -29,24 +30,25 @@ An error packet is sent to stop the transmission. It has a length and sequence n
 
 
 
-## PUT
+### PUT
 
 ```
 > put [filename]
+```
+
+1. Client sends GET message
+2. Server responds 
+
+### GET
+
+```
+> get [filename]
 ```
 
 1. Client sends PUT message.
 2. Server responds with length of payload in bytes, followed by sequence number, then data payload.
 3. Client receives the packets until an EOF packet is sent.
 
-## GET
-
-```
-> get [filename]
-```
-
-1. Client sends GET message
-
-## LS
+### LS
 
 
