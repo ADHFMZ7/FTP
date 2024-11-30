@@ -19,6 +19,15 @@
 #define PORT "8080"  // the port users will be connecting to
 #define BACKLOG 10	 // how many pending connections queue will hold
 
+int send_error_header(int sockfd) {
+	uint32_t header = 0;
+	if (send(sockfd, &header, 4, 0) == -1) {
+		perror("send");
+		return -1;
+	}
+	return 0;
+}
+
 void sigchld_handler(int s)
 {
 	(void)s; // quiet unused variable warning
@@ -30,7 +39,6 @@ void sigchld_handler(int s)
 
 	errno = saved_errno;
 }
-
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa)
@@ -141,9 +149,9 @@ int main(void)
 			// Loop to handle multiple client commands
 			while (1) {
 				bytes_received = recv(new_fd, buf, mss - 1, 0);
-				if (bytes_received <= 0) break; // connection closed by client or error
+				if (bytes_received <= 0) break; 
 
-				buf[bytes_received] = '\0'; // null-terminate for safety
+				buf[bytes_received] = '\0'; 
 				std::string command (buf);
 				if (command == "ls") {
 					
@@ -168,17 +176,13 @@ int main(void)
 					if (!std::filesystem::exists(filename)) {
 						std::cerr << "File not found: " << filename << std::endl;
 
-						// send zero-length segment to indicate file not found
-						uint32_t header = 0;
-						if (send(new_fd, &header, 4, 0) == -1) {
-							perror("send");
-						}
+						send_error_header(new_fd);	
 						continue;
 					}
 
-					// open file fopen
 					FILE *file = fopen(filename.c_str(), "rb");
 					if (!file) {
+						send_error_header(new_fd);
 						perror("Failed to open file");
 						return -1;
 					}	
@@ -207,11 +211,11 @@ int main(void)
 					}	
 
 					if (bytes_read == 0) {
-						// EOF marker: Length = 0, Sequence number = last seq_num + 1
+						// EOF marker: Length = 0, Sequence number = last seq_num
 						buf[0] = 0x00; // Length high byte
 						buf[1] = 0x00; // Length low byte
-						buf[2] = ((seq_num + 1) >> 8) & 0xFF; // Seq number high byte
-						buf[3] = (seq_num + 1) & 0xFF;       // Seq number low byte
+						buf[2] = ((seq_num) >> 8) & 0xFF; // Seq number high byte
+						buf[3] = (seq_num) & 0xFF;       // Seq number low byte
 
 						if (send(new_fd, buf, 4, 0) == -1) {
 							perror("Failed to send EOF marker");
@@ -272,6 +276,7 @@ int main(void)
 							break;
 						}
 
+
 						if (length == 0) {
 							std::cout << "EOF marker received" << std::endl;
 							break;
@@ -307,10 +312,10 @@ int main(void)
 				}
 			}
 
-			close(new_fd); // close connection when done
+			close(new_fd); 
 			exit(0);
 		}
-		close(new_fd);  // parent doesn't need this
+		close(new_fd);  
 	}
 
 	return 0;

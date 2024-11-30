@@ -19,6 +19,7 @@ Client::Client(const std::string &host, int port): host(host), port(port) {
 
 Client::~Client() {
     close(this->sock);
+    delete[] buf;
     std::cout << "Connection Closed" << std::endl;
 }
 
@@ -86,7 +87,6 @@ int Client::put_file(std::string filename) {
 
         if (send(sock, buf, bytes_read + 4, 0) == -1) {
             perror("Failed to send segment");
-            delete[] buf;
             fclose(file);
             return -1;
         }
@@ -95,20 +95,19 @@ int Client::put_file(std::string filename) {
     }
 
     if (bytes_read == 0) {
-    // EOF marker: Length = 0, Sequence number = last seq_num + 1
-    buf[0] = 0x00; // Length high byte
-    buf[1] = 0x00; // Length low byte
-    buf[2] = ((seq_num + 1) >> 8) & 0xFF; // Seq number high byte
-    buf[3] = (seq_num + 1) & 0xFF;       // Seq number low byte
+        // EOF marker: Length = 0, Sequence number = last seq_num + 1
+        buf[0] = 0x00; // Length high byte
+        buf[1] = 0x00; // Length low byte
+        buf[2] = ((seq_num + 1) >> 8) & 0xFF; // Seq number high byte
+        buf[3] = (seq_num + 1) & 0xFF;       // Seq number low byte
 
-    if (send(sock, buf, 4, 0) == -1) {
-        perror("Failed to send EOF marker");
-        delete[] buf;
-        fclose(file);
-        return -1;
-    }
+        if (send(sock, buf, 4, 0) == -1) {
+            perror("Failed to send EOF marker");
+            fclose(file);
+            return -1;
+        }
 
-    std::cout << "Sent EOF marker" << std::endl;
+        std::cout << "Sent EOF marker" << std::endl;
     } 
 
 
@@ -118,7 +117,6 @@ int Client::put_file(std::string filename) {
         std::cout << "File transfer complete: " << filename << std::endl;
     }
 
-    delete[] buf;
     fclose(file);
 
     return 0;
@@ -134,7 +132,6 @@ int Client::get_file(std::string filename) {
         return -1;
     }
 
-    // create file to write to if it doesn't exist
     std::ofstream ofs(filename, std::ofstream::out | std::ofstream::binary);
 
     int bytes_received;
@@ -169,7 +166,7 @@ int Client::get_file(std::string filename) {
         }
 
         if (length == 0 && seq_num == 0) {
-            std::cout << "File not found on server" << std::endl;
+            std::cout << "File cannot be sent" << std::endl;
             break;
         }
 
@@ -200,7 +197,6 @@ int Client::get_file(std::string filename) {
     }
 
     ofs.close();
-    delete[] buf;
     return 0;
 }
 
