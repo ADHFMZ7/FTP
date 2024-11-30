@@ -1,6 +1,16 @@
-# Protocol design
+# FTP
 
-## Data packet
+## Names
+
+- Ahmad Aldasouqi - ahmadaldasouqi@csu.fullerton.edu
+- Wayne Muse - waynemuse@csu.fullerton.edu
+- Kourosh Alasti - kalasti@csu.fullerton.edu
+- Francisco Godoy - fgodoy0@csu.fullerton.edu
+- Christian Bonilla - chrisbo@csu.fullerton.edu
+
+## Protocol design
+
+### Data packet
 This packet is used when file data is being transmitted. The first two byte field holds the length of the payload in the current segment in byte and the second two byte field holds the sequence number of the current file transmission.
 ```
 0                32                64  

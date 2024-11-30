@@ -20,7 +20,8 @@ int handle_command(Client &c, std::string command) {
     std::istringstream stream(command);
 
     stream >> op;
-    stream >> p1;
+    getline(stream, p1);
+    p1.erase(0, 1);
 
     if (op == "quit") {
         std::cout << "Exiting ftp client..." << std::endl;
