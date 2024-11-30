@@ -12,8 +12,8 @@
 Program requires GNU Readline.
 
 1. Use make command from src directory to compile the code. This creates a new bin directory.
-2. cd into bin/server and run ./server <port>
-3. cd into bin/client command and use ./client <ip> <port>. Use the ip the server is on (127.0.0.1 if on same host). Use the same port as in the previous step.
+2. cd into bin/server and run `./server <port>`
+3. cd into bin/client command and use `./client <ip> <port>`. Use the ip the server is on (127.0.0.1 if on same host). Use the same port as in the previous step.
 4. You can now run commands from the client.
 
 ## Example
