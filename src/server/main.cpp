@@ -146,6 +146,9 @@ int main(void)
 				buf[bytes_received] = '\0'; // null-terminate for safety
 				std::string command (buf);
 				if (command == "ls") {
+					
+					// TODO: Handle the case where the ls output is longer than MSS
+
 					std::string file_list;
 					std::string path = "./";
 					for (const auto &entry : std::filesystem::directory_iterator(path)) {
@@ -157,73 +160,146 @@ int main(void)
 						perror("send");
 				}
 				else if (command.substr(0, command.find(" ")) == "get") {
-				
+
+					std::string filename = command.substr(command.find(" ") + 1);
+					filename.erase(filename.find_last_not_of(" \n\r\t") + 1);  // Trim trailing whitespace
+
 					// ensure file exists
+					if (!std::filesystem::exists(filename)) {
+						std::cerr << "File not found: " << filename << std::endl;
 
-					// calculate number of segments
-					
-					// send number of segments
+						// send zero-length segment to indicate file not found
+						uint32_t header = 0;
+						if (send(new_fd, &header, 4, 0) == -1) {
+							perror("send");
+						}
+						continue;
+					}
 
-					// loop n times sending segments
+					// open file fopen
+					FILE *file = fopen(filename.c_str(), "rb");
+					if (!file) {
+						perror("Failed to open file");
+						return -1;
+					}	
 
+					std::cout << "Sending file: " << filename << std::endl;
+
+					int bytes_read;
+					int chunk_size = mss - 4;
+					uint16_t seq_num = 0;
+
+					while ((bytes_read = fread(buf + 4, 1, chunk_size, file)) > 0) {
+						buf[0] = (bytes_read >> 8) & 0xFF;
+						buf[1] = bytes_read & 0xFF;
+						buf[2] = (seq_num >> 8) & 0xFF;
+						buf[3] = seq_num & 0xFF;
+
+						std::cout << "Read " << bytes_read << " bytes; seq number: " << seq_num << std::endl;
+
+						if (send(new_fd, buf, bytes_read + 4, 0) == -1) {
+							perror("Failed to send segment");
+							fclose(file);
+							return -1;
+						}
+
+						seq_num++; 
+					}	
+
+					if (bytes_read == 0) {
+						// EOF marker: Length = 0, Sequence number = last seq_num + 1
+						buf[0] = 0x00; // Length high byte
+						buf[1] = 0x00; // Length low byte
+						buf[2] = ((seq_num + 1) >> 8) & 0xFF; // Seq number high byte
+						buf[3] = (seq_num + 1) & 0xFF;       // Seq number low byte
+
+						if (send(new_fd, buf, 4, 0) == -1) {
+							perror("Failed to send EOF marker");
+							fclose(file);
+							return -1;
+						}
+
+						std::cout << "Sent EOF marker" << std::endl;
+					}	
+
+					if (ferror(file)) {
+						perror("File read error");
+					} else {
+						std::cout << "File transfer complete: " << filename << std::endl;
+					}
+
+					fclose(file);
 				}
 
 				else if (command.substr(0, command.find(" ")) == "put") {
 					std::string filename = command.substr(command.find(" ") + 1);
-					filename.erase(filename.find_last_not_of(" \n\r\t") + 1);     // Trim trailing whitespace
+					filename.erase(filename.find_last_not_of(" \n\r\t") + 1);  // Trim trailing whitespace
 					std::ofstream ofs(filename, std::ofstream::out | std::ofstream::binary);
 
 					if (!ofs.is_open()) {
 						std::cerr << "Failed to open file: " << filename << std::endl;
-						continue; 
+						continue;
 					}
 
 					std::cout << "Receiving file: " << filename << std::endl;
 
 					while (1) {
+						// Read the 4-byte header
 						bytes_received = recv(new_fd, buf, 4, 0);
-						if (bytes_received <= 0) break; 
-
-						if (bytes_received != 4) {
-							std::cerr << "Incomplete header received." << std::endl;
+						if (bytes_received == 0) {
+							perror("recv error");
 							break;
 						}
 
-					// Parse the header
+						if (bytes_received != 4) {
+							std::cerr << "Incomplete header received. Expected 4 bytes, got " 
+									<< bytes_received << " bytes." << std::endl;
+							break;
+						}
+
+						// Parse the header
 						uint16_t length = (static_cast<unsigned char>(buf[0]) << 8) |
-							           static_cast<unsigned char>(buf[1]);
+										static_cast<unsigned char>(buf[1]);
 						uint16_t seq_num = (static_cast<unsigned char>(buf[2]) << 8) |
-								    static_cast<unsigned char>(buf[3]);
+										static_cast<unsigned char>(buf[3]);
 
 						std::cout << "Segment received - Length: " << length
-							  << ", Sequence Number: " << seq_num << std::endl;
+								<< ", Sequence Number: " << seq_num << std::endl;
 
-						// Read the data payload
+						// Validate length
 						if (length > mss - 4) {
 							std::cerr << "Invalid length: " << length << " exceeds MSS payload." << std::endl;
 							break;
 						}
 
-						bytes_received = recv(new_fd, buf, length, 0);
-						if (bytes_received <= 0) break; // Connection closed or error
-
-						if (bytes_received != length) {
-							std::cerr << "Incomplete data received. Expected: " << length
-								  << ", Received: " << bytes_received << std::endl;
+						if (length == 0) {
+							std::cout << "EOF marker received" << std::endl;
 							break;
 						}
 
-					ofs.write(buf, bytes_received);
-					if (ofs.bad()) {
-					    std::cerr << "Error writing to file: " << filename << std::endl;
-					    break;
+						// Read the data payload
+						bytes_received = recv(new_fd, buf, length, 0);
+						if (bytes_received <= 0) {
+							perror("recv error or connection closed unexpectedly");
+							break;
+						}
+
+						if (bytes_received != length) {
+							std::cerr << "Incomplete data received. Expected: " << length
+									<< ", Received: " << bytes_received << std::endl;
+							break;
+						}
+
+						ofs.write(buf, bytes_received);
+						if (ofs.bad()) {
+							std::cerr << "Error writing to file: " << filename << std::endl;
+							break;
 						}
 					}
 
 					ofs.close();
 					std::cout << "File transfer complete: " << filename << std::endl;
 				}
-
 
 				else {
 					// unrecognized command error
